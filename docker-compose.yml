@@ -24,8 +24,6 @@ services:
       - SPRING_DATA_REDIS_PASSWORD=${RUOYI_REDIS_PASS}
 
 
-# services: 行在此处是多余的，导致 Map keys must be unique 错误（YAML Key重复）。
-# 合法写法应该只有一个 services: 键。
 
   ruoyi-admin-2:
     image: ruoyi-jenkins-docker:latest

@@ -10,8 +10,10 @@ pipeline {
         stage('拉取代码 (Checkout)') {
             steps {
                 echo '正在从 GitHub 拉取最新代码...'
-                // 注意：因为你的仓库是 Public 的，Jenkins 直接用 HTTPS 拉取最快，不需要配 SSH 密钥
-                git branch: 'main', url: 'https://github.com/jjmstart/ruoyi-jenkins-docker.git'
+                // 使用 SSH 协议拉取，避免国内服务器 HTTPS 访问 GitHub 不稳定的问题
+                git branch: 'main', 
+                    url: 'git@github.com:jjmstart/ruoyi-jenkins-docker.git',
+                    credentialsId: 'github-jjmstart-ssh'
             }
         }
         
@@ -26,8 +28,9 @@ pipeline {
         stage('滚动部署 (Deploy)') {
             steps {
                 echo '开始部署到双节点高可用集群...'
+                sh 'cp /opt/docker/backend/ruoyi/.env .'
                 // 核心魔法：强制重新创建容器，让双子塔加载刚刚构建出的最新镜像！
-                sh 'docker-compose up -d --force-recreate'
+                sh 'docker compose up -d --force-recreate'
             }
         }
     }

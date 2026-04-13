@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+    
+    environment {
+        // 定义我们要构建的镜像名称
+        IMAGE_NAME = "ruoyi-jenkins-docker"
+    }
+    
+    stages {
+        stage('拉取代码 (Checkout)') {
+            steps {
+                echo '正在从 GitHub 拉取最新代码...'
+                // 注意：因为你的仓库是 Public 的，Jenkins 直接用 HTTPS 拉取最快，不需要配 SSH 密钥
+                git branch: 'main', url: 'https://github.com/jjmstart/ruoyi-jenkins-docker.git'
+            }
+        }
+        
+        stage('多阶段构建 (Build Image)') {
+            steps {
+                echo '开始执行 Docker 多阶段构建 (编译 Maven + 打包 JRE 镜像)...'
+                // 打包镜像，并打上 latest 标签和当前构建号标签 (方便以后回滚)
+                sh 'docker build -t ${IMAGE_NAME}:latest -t ${IMAGE_NAME}:${BUILD_NUMBER} .'
+            }
+        }
+        
+        stage('滚动部署 (Deploy)') {
+            steps {
+                echo '开始部署到双节点高可用集群...'
+                // 核心魔法：强制重新创建容器，让双子塔加载刚刚构建出的最新镜像！
+                sh 'docker-compose up -d --force-recreate'
+            }
+        }
+    }
+}

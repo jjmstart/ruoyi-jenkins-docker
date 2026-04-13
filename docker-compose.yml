@@ -1,7 +1,7 @@
 services:
 
   ruoyi-admin-1:
-    image: ruoyi/ruoyi-admin:v3.8.7
+    image: ruoyi-jenkins-docker:latest
 
     container_name: ruoyi-admin-1
 
@@ -28,7 +28,7 @@ services:
 # 合法写法应该只有一个 services: 键。
 
   ruoyi-admin-2:
-    image: ruoyi/ruoyi-admin:v3.8.7
+    image: ruoyi-jenkins-docker:latest
 
     container_name: ruoyi-admin-2
 

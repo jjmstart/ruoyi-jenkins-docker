@@ -1,0 +1,56 @@
+services:
+
+  ruoyi-admin-1:
+    image: ruoyi/ruoyi-admin:v3.8.7
+
+    container_name: ruoyi-admin-1
+
+    restart: unless-stopped
+
+    networks:
+      - global_gateway
+    
+    environment: 
+      - LANG=C.UTF-8
+      # 注入JVM双重边界（软限）
+      - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8 -Xms1024m -Xmx1024m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m
+      # 利用Docker内部的DNS，注入数据库连接
+      # 注意：这里的 ry-vue 是若依默认的数据库名，保持不变
+      - SPRING_DATASOURCE_DRUID_MASTER_URL=jdbc:mysql://mysql:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_DRUID_MASTER_USERNAME=root
+      - SPRING_DATASOURCE_DRUID_MASTER_PASSWORD=${RUOYI_MYSQL_PASS}
+      # 呼入Redis连接与密码
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PASSWORD=${RUOYI_REDIS_PASS}
+
+
+# services: 行在此处是多余的，导致 Map keys must be unique 错误（YAML Key重复）。
+# 合法写法应该只有一个 services: 键。
+
+  ruoyi-admin-2:
+    image: ruoyi/ruoyi-admin:v3.8.7
+
+    container_name: ruoyi-admin-2
+
+    restart: unless-stopped
+
+    networks:
+      - global_gateway
+    
+    environment: 
+      - LANG=C.UTF-8
+      # 注入JVM双重边界（软限）
+      - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8 -Xms1024m -Xmx1024m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m
+      # 利用Docker内部的DNS，注入数据库连接
+      # 注意：这里的 ry-vue 是若依默认的数据库名，保持不变
+      - SPRING_DATASOURCE_DRUID_MASTER_URL=jdbc:mysql://mysql:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_DRUID_MASTER_USERNAME=root
+      - SPRING_DATASOURCE_DRUID_MASTER_PASSWORD=${RUOYI_MYSQL_PASS}
+      # 呼入Redis连接与密码
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PASSWORD=${RUOYI_REDIS_PASS}
+
+    
+networks:
+  global_gateway:
+    external: true

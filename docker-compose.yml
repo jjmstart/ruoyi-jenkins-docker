@@ -1,54 +1,42 @@
+# =============================================================
+# Docker Compose - 若依后端 · 节点 1
+# 节点：ops-lab-gz-03（广州·火山引擎 4C8G）
+# MySQL：本机容器，通过 Docker 内网访问，0ms 延迟
+# Redis：哨兵模式，Master 就在本机（gz-03），写操作 0ms 延迟
+# 对外：绑定 Tailscale IP，供 bj-01 上的 Nginx 反向代理
+# =============================================================
+
 services:
 
   ruoyi-admin-1:
     image: ruoyi-jenkins-docker:latest
-
     container_name: ruoyi-admin-1
-
     restart: unless-stopped
+
+    ports:
+      # 绑定 gz-03 的 Tailscale IP，bj-01 上的 Nginx 通过 Tailscale 内网将流量代理过来。
+      # 不绑定公网 IP，所有流量只走 WireGuard 加密隧道，安全。
+      - "100.92.5.116:8080:8080"
 
     networks:
       - global_gateway
-    
-    environment: 
+
+    environment:
       - LANG=C.UTF-8
-      # 注入JVM双重边界（软限）
       - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8 -Xms1024m -Xmx1024m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m
-      # 利用Docker内部的DNS，注入数据库连接
-      # 注意：这里的 ry-vue 是若依默认的数据库名，保持不变
+
+      # MySQL：通过 Docker 内网 DNS 直连本机 mysql 容器，延迟 0ms。
       - SPRING_DATASOURCE_DRUID_MASTER_URL=jdbc:mysql://mysql:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai
       - SPRING_DATASOURCE_DRUID_MASTER_USERNAME=root
       - SPRING_DATASOURCE_DRUID_MASTER_PASSWORD=${RUOYI_MYSQL_PASS}
-      # 呼入Redis连接与密码
-      - SPRING_DATA_REDIS_HOST=redis
+
+      # Redis 哨兵模式：Spring 询问任意 Sentinel 获取当前 Master 地址。
+      # Master 就在本机（gz-03），写操作延迟 0ms，故障切换后 Spring 自动重连新 Master。
+      - SPRING_DATA_REDIS_SENTINEL_MASTER=mymaster
+      - SPRING_DATA_REDIS_SENTINEL_NODES=100.118.69.78:26379,100.92.5.116:26379,100.79.132.125:26379
       - SPRING_DATA_REDIS_PASSWORD=${RUOYI_REDIS_PASS}
 
 
-
-  ruoyi-admin-2:
-    image: ruoyi-jenkins-docker:latest
-
-    container_name: ruoyi-admin-2
-
-    restart: unless-stopped
-
-    networks:
-      - global_gateway
-    
-    environment: 
-      - LANG=C.UTF-8
-      # 注入JVM双重边界（软限）
-      - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8 -Xms1024m -Xmx1024m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m
-      # 利用Docker内部的DNS，注入数据库连接
-      # 注意：这里的 ry-vue 是若依默认的数据库名，保持不变
-      - SPRING_DATASOURCE_DRUID_MASTER_URL=jdbc:mysql://mysql:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai
-      - SPRING_DATASOURCE_DRUID_MASTER_USERNAME=root
-      - SPRING_DATASOURCE_DRUID_MASTER_PASSWORD=${RUOYI_MYSQL_PASS}
-      # 呼入Redis连接与密码
-      - SPRING_DATA_REDIS_HOST=redis
-      - SPRING_DATA_REDIS_PASSWORD=${RUOYI_REDIS_PASS}
-
-    
 networks:
   global_gateway:
     external: true

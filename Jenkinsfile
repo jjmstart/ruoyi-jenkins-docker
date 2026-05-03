@@ -7,8 +7,6 @@ pipeline {
   environment {
     REGISTRY_HOST = '100.118.69.78:5000'
     IMAGE_NAME    = 'ruoyi'
-    GIT_SHORT_SHA = ''
-    IMAGE_TAG     = ''
   }
   stages {
     stage('Checkout') {
@@ -26,15 +24,10 @@ pipeline {
       }
     }
     stage('Docker Build') {
-      when {
-        anyOf {
-          branch 'main'
-          expression { env.GIT_BRANCH == 'origin/main' || env.BRANCH_NAME == 'main' }
-        }
-      }
       steps {
         sh '''
           set -eu
+          echo "Building image tag: ${IMAGE_TAG}"
           DOCKER_BUILDKIT=1 docker build \
             -t ${REGISTRY_HOST}/${IMAGE_NAME}:${IMAGE_TAG} \
             -t ${REGISTRY_HOST}/${IMAGE_NAME}:latest \
@@ -43,12 +36,6 @@ pipeline {
       }
     }
     stage('Docker Push') {
-      when {
-        anyOf {
-          branch 'main'
-          expression { env.GIT_BRANCH == 'origin/main' || env.BRANCH_NAME == 'main' }
-        }
-      }
       steps {
         withCredentials([
           usernamePassword(
@@ -74,14 +61,17 @@ pipeline {
       withCredentials([string(credentialsId: 'feishu-webhook-url', variable: 'FEISHU_URL')]) {
         sh '''
           set -eu
-          curl -sf -X POST "$FEISHU_URL" \
+          cat > feishu-payload.json <<EOF
+{
+  "msg_type": "text",
+  "content": {
+    "text": "✅ [ruoyi] 新版本就绪：ruoyi:${IMAGE_TAG}，可手工触发部署。Build #${BUILD_NUMBER}"
+  }
+}
+EOF
+          curl -sS -f -X POST "$FEISHU_URL" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"msg_type\": \"text\",
-              \"content\": {
-                \"text\": \"✅ [ruoyi] 新版本就绪：ruoyi:${IMAGE_TAG}，可手工触发部署。Build #${BUILD_NUMBER}\"
-              }
-            }"
+            --data-binary @feishu-payload.json
         '''
       }
     }
@@ -89,14 +79,17 @@ pipeline {
       withCredentials([string(credentialsId: 'feishu-webhook-url', variable: 'FEISHU_URL')]) {
         sh '''
           set -eu
-          curl -sf -X POST "$FEISHU_URL" \
+          cat > feishu-payload.json <<EOF
+{
+  "msg_type": "text",
+  "content": {
+    "text": "❌ [ruoyi] 构建失败：Job #${BUILD_NUMBER}，请查看 Jenkins。"
+  }
+}
+EOF
+          curl -sS -f -X POST "$FEISHU_URL" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"msg_type\": \"text\",
-              \"content\": {
-                \"text\": \"❌ [ruoyi] 构建失败：Job #${BUILD_NUMBER}，请查看 Jenkins。\"
-              }
-            }"
+            --data-binary @feishu-payload.json
         '''
       }
     }

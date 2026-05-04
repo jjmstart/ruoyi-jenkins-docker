@@ -58,7 +58,7 @@ pipeline {
   }
   post {
     success {
-      withCredentials([string(credentialsId: 'feishu-webhook-url', variable: 'FEISHU_URL')]) {
+      withCredentials([string(credentialsId: 'feishu-webhook-url-jenkins-notify', variable: 'FEISHU_URL')]) {
         sh '''
           set -eu
           cat > feishu-payload.json <<EOF
@@ -76,7 +76,7 @@ EOF
       }
     }
     failure {
-      withCredentials([string(credentialsId: 'feishu-webhook-url', variable: 'FEISHU_URL')]) {
+      withCredentials([string(credentialsId: 'feishu-webhook-url-jenkins-notify', variable: 'FEISHU_URL')]) {
         sh '''
           set -eu
           cat > feishu-payload.json <<EOF

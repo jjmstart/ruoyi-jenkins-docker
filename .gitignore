@@ -8,3 +8,7 @@ source/*/target/
 # IDE 文件
 .idea/
 *.iml
+
+
+# Jenkins 构建生成的临时文件
+feishu-payload.json
